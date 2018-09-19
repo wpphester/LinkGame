@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>连连看 棋盘展示-项目案例</title>
+    <link rel="shortcut icon" href="小图标8.jpg"/>
+    <style>
+        input{
+            width: 40px;
+            border: 1px solid deepskyblue;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+<p>请输入您想要删除的两个点的坐标：</p>
+<p>第一个点的坐标： 行: <input type="text" id="x1" /> &nbsp;列：<input type="text" id="y1" /></p>
+<p>第二个点的坐标： 行: <input type="text" id="x2" /> &nbsp;列：<input type="text" id="y2" /></p>
+<div style="margin-left: 300px;margin-top:-60px;width: 150px;height: 50px">
+    <p>
+        <button onclick="del ()" style="height:30px;border-radius: 5px;border: 1px solid #0039FF;background: #0039FF">
+            <span style="color: #fff">确认消除</span>
+        </button>
+    </p>
+</div>
+<div id="cb"></div>
+
+<script>
+    var x1=0;
+    var y1=0;
+    var x2=0;
+    var y2=0;
+
+    var x=parseInt( prompt("请输入棋盘的行：") );     //parseInt 只取数字，遇到字母就结束
+    while(x%2!=0){     //保证都是偶数，否则游戏不能玩
+        x=parseInt( prompt("请输入棋盘的行：") );
+    }
+    var y=Number( prompt("请输入棋盘的列：") );
+    while(y%2!=0){
+        y=parseInt( prompt("请输入棋盘的列：") );
+    }
+
+    var chessBoard=new Array();     //创建二维数组
+    for(var i=0;i<x;i++){
+        chessBoard[i]=new Array();
+        for(var j=0;j<y;j++){
+            chessBoard[i][j]=0;
+        }
+    }
+
+    var num;
+    for(var i=0;i<x;i++){
+        for(var j=0;j<y;j=j+2){      //重点   如何保证游戏能够结束？ 一次生成两个数字
+            num=Math.floor(Math.random()*9)+1;   //随机生成1-9的数字，然后赋值给二维数组
+            chessBoard[i][j]=num;
+            chessBoard[i][j+1]=num;
+        }
+    }
+
+    for(var j=0;j<x*y;j++){     //开始打乱顺序     //随机得到要调换的两个数的位置
+        var index_x1=Math.floor( Math.random()*x);       //从x中随机取一个数
+        var index_y1=Math.floor( Math.random()*y);      //从y中随机取一个数
+        var index_x2=Math.floor( Math.random()*x);
+        var index_y2=Math.floor( Math.random()*y);
+
+        var temp=chessBoard[index_x1][index_y1];         //调换顺序
+        chessBoard[index_x1][index_y1]=chessBoard[index_x2][index_y2];
+        chessBoard[index_x2][index_y2]=temp;
+    }
+
+    //调用方法
+    showArray();
+
+    //点击事件的触发函数
+    function del() {
+         x1=document.getElementById("x1").value-1;     //数组的索引从0开始，而我们输入是从1开始的
+         y1=document.getElementById("y1").value-1;
+         x2=document.getElementById("x2").value-1;
+         y2=document.getElementById("y2").value-1;
+
+        //开始消除   两个点的数字必须是一样的，如果相等，则判断游戏规则
+        if( chessBoard[x1][y1]==chessBoard[x2][y2]){
+            if( oneLine(x1,y1,x2,y2) || twoLine(x1,y1,x2,y2) || threeLine(x1,y1,x2,y2) ){
+                chessBoard[x1][y1]=0;
+                chessBoard[x2][y2]=0;
+
+                //封装的好处
+                showArray();
+            } else{
+                alert("规则不符，请重新选择");
+            }
+         }else{
+            alert("输入的两个点的值不同，请重新选择");
+        }
+    }
+
+    //三线消除   转折、同行的话，x可以确定，但y要循环得到
+    function threeLine(x1,y1,x2,y2) {
+        var zx1=x1;
+        for(var i=0;i<y;i++){
+            //找折点  特点：值为0
+            if(chessBoard[zx1][i]==0){
+                zy1=i;
+                //三线消除=单线+双线
+                if( oneLine(x1,y1,zx1,zy1) && twoLine(zx1,zy1,x2,y2) ){
+                    return true;
+                }
+            }
+        }
+        var zy2=y1;
+        for(var i=0;i<x;i++){
+            if(chessBoard[i][zy2]==0){
+                zx2=i;
+                if( oneLine(x1,y1,zx2,zy2) && twoLine(zx2,zy2,x2,y2) ){
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    //双线消除
+    function twoLine(x1,y1,x2,y2) {
+        //定义转折点
+        var zx1=x1;
+        var zy1=y2;
+
+        var zx2=x2;
+        var zy2=y1;
+
+        if(chessBoard[zx1][zy1]==0 && oneLine(x1,y1,zx1,zy1) && oneLine(zx1,zy1,x2,y2) ){
+            return true;
+        }
+        if(chessBoard[zx2][zy2]==0 && oneLine(x1,y1,zx2,zy2) && oneLine(zx2,zy2,x2,y2) ){
+            return true;
+        }
+        return false;
+    }
+    //单线消除  同行或同列
+    function oneLine(x1,y1,x2,y2) {
+        var min=0;
+        var max=0;
+        if( x1==x2 ){
+            min=y1>y2 ? y2 : y1;
+            max=y1>y2 ? y1 : y2;
+            for(var i=min+1;i<max;i++){
+                if( chessBoard[x1][i] !=0 ){    //只要中间有阻隔，不通
+                    return false;
+                }
+            }
+            return true;
+        }else if( y1==y2 ){
+            min=x1>x2 ? x2 : x1;
+            max=x1>x2 ? x1 : x2;
+            for(var i=min+1;i<max;i++){
+                if( chessBoard[i][y1] !=0 ){
+                    return false;
+                }
+            }
+            return true;     //整个循环都没有阻碍，则可以消除
+        }
+    }
+    //封装一个方法，如果这个方法不调用，不会执行
+    function showArray() {
+        var str="<br />当前棋盘如下<br />";
+        for(var i=0;i<x;i++){
+            for(var j=0;j<y;j++){
+                if(chessBoard[i][j]==0){
+                    str+="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                }else{
+                    str+="&nbsp;&nbsp;"+chessBoard[i][j]+"&nbsp;&nbsp;";
+                }
+            }
+            str+="<br />"     //一行输出完后，换一行
+        }
+        document.getElementById("cb").innerHTML=str;
+    }
+
+
+
+
+</script>
+
+</body>
+</html>
